@@ -1,0 +1,118 @@
+﻿@page "/"
+@inject Microsoft.Extensions.Logging.ILogger<Index> logger
+
+<PageTitle>Word Search Game</PageTitle>
+
+@if (gameBoard != null)
+{
+    <table class="game-board">
+        @for (var i = 0; i < gameBoard.GetLength(0); i++)
+        {
+            <tr>
+                @for (var j = 0; j < gameBoard.GetLength(1); j++)
+                {
+                    <td @onclick="() => SelectCell(i, j)" class="@(selectedCells.Contains((i, j)) ? "selected" : "")">
+                    @gameBoard[i, j]
+                </td>
+                }
+            </tr>
+        }
+    </table>
+
+    <button @onclick="CheckWord">Check Word</button>
+
+    <p>@message</p>
+}
+
+@code {
+    private char[,] gameBoard;
+    string message = "";
+    private Random random = new Random();
+    List<(int, int)> selectedCells = new List<(int, int)>();
+    private List<string> words = new List<string> { "blazor", "dotnet", "microsoft", "github", "copilot", "visual", "studio", "code", "azure", "cloud" };
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        InitializeGameBoard();
+    }
+
+    private void InitializeGameBoard()
+    {
+        gameBoard = new char[10, 10];
+
+        // Fill the grid with random words
+        foreach (var word in words)
+        {
+            var direction = random.Next(2); // 0 for horizontal, 1 for vertical
+            var start = random.Next(10 - word.Length + 1); // Random start index
+
+            if (direction == 0) // Horizontal
+            {
+                var row = random.Next(10);
+                for (var i = 0; i < word.Length; i++)
+                {
+                    gameBoard[row, start + i] = word[i];
+                }
+            }
+            else // Vertical
+            {
+                var column = random.Next(10);
+                for (var i = 0; i < word.Length; i++)
+                {
+                    gameBoard[start + i, column] = word[i];
+                }
+            }
+        }
+
+        // Fill the rest of the grid with random letters
+        for (var i = 0; i < 10; i++)
+        {
+            for (var j = 0; j < 10; j++)
+            {
+                if (gameBoard[i, j] == '\0') // If the cell is empty
+                {
+                    gameBoard[i, j] = (char)('A' + random.Next(26));
+                }
+            }
+        }
+    }
+
+    void SelectCell(int row, int column)
+    {
+        logger.LogInformation($"SelectCell called with row {row} and column {column}");
+        var cell = (row, column);
+
+        if (selectedCells.Contains(cell))
+        {
+            selectedCells.Remove(cell);
+        }
+        else
+        {
+            selectedCells.Add(cell);
+        }
+
+        StateHasChanged();
+    }
+
+    void CheckWord()
+    {
+        var selectedWord = string.Concat(selectedCells.OrderBy(c => c.Item1).ThenBy(c => c.Item2).Select(c => gameBoard[c.Item1, c.Item2]));
+
+        if (IsWordInGrid(selectedWord))
+        {
+            message = $"The word {selectedWord} is in the grid!";
+        }
+        else
+        {
+            message = $"The word {selectedWord} is not in the grid.";
+        }
+
+        selectedCells.Clear(); // Clear the selected cells
+    }
+
+    bool IsWordInGrid(string word)
+    {
+        return false;
+    }
+}
